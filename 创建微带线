@@ -1,0 +1,68 @@
+Zzong = [];
+N=200;%生成大小
+for pin=1:2
+delta=0.75;%表面均方根粗糙度
+skw=1;%偏度
+ku=3;%峰度
+betax=3;%x方向的相关长度
+betay=3;%y方向的相关长度
+C=1;%功率谱密度
+step=5;
+jiaodu=0;
+
+L=1000;
+dx=L/N;
+dy=L/N;
+NN=-N/2:N/2-1; 
+[Nx,Ny]=meshgrid(NN,NN);
+taux=dx.*Nx;tauy=dy.*Ny;
+
+%%生成具有指定自相关函数的粗糙表面
+eta=randn(N,N);%高斯分布白噪声
+eta=wgn(N,N,0.01);
+[meann,sigma,sk,k] = johnsoncanshu(eta)
+A=fft2(eta);%傅里叶变换
+R=zeros(N,N);
+R=exp(-2.3.*sqrt(((taux.*cosd(jiaodu)-tauy.*sind(jiaodu))/betax).^2+((taux.*sind(jiaodu)+tauy.*cosd(jiaodu))/betay).^2));%自相关函数
+
+Gz=fft2(R);%功率谱密度函数
+H=sqrt(Gz./C);%传递函数
+Z=H.*A;%表面高度的傅里叶变换
+z=ifft2(Z);%表面高度分布
+z = real(z) ;
+
+[meann2,sigma2,sk2,k2] = johnsoncanshu(z);
+
+result = f_johnson_M(0,delta,skw,ku);
+R=zeros(N,1)*NaN;
+for i=1:N
+    R = [R,f_johnson_z2y(z(:,i),result.coef,result.type)];
+end
+R(:,1)=[];
+
+% [meann3,sigma3,sk3,k3] = johnsoncanshu(R);
+
+Zzong=[Zzong,R];
+end
+Zzong(1:2, :) = 0;            % 第一行置零
+Zzong = [Zzong; zeros(1, size(Zzong,2))];
+
+%成品
+Lm2=size(Zzong,1);
+%zhengchangdaoxian
+S1=Zzong(1:Lm2,1:301);
+S2=-1*Zzong(1:Lm2,1+301:31+301)+68.7;
+% S3=-1*Zzong(1:Lm2,1+304:31+304)+143;
+% S4=Zzong(1:Lm2,1+336:31+336)+149;
+% [meann4,sigma4,sk4,k4] = johnsoncanshu(Zzong)
+[meann5,sigma5,sk5,k5] = johnsoncanshu(S1)
+[meann6,sigma6,sk6,k6] = johnsoncanshu(S2)
+% [meann7,sigma7,sk7,k7] = johnsoncanshu(S3)
+% [meann8,sigma8,sk8,k8] = johnsoncanshu(S4)
+
+[F1,V1]= surf2solid(5,5,S1,'elevation',-6);
+[F2,V2]= surf2solid(5,5,S2,'elevation',74.7);
+% [F5,V5]= surf2solid(5,5,S3,'elevation',S4);
+stlwrite('C:\Users\16603\Desktop\b_sq=0.75_ssk=1_sku=3.stl',F1,V1)
+stlwrite('C:\Users\16603\Desktop\d_sq=0.75_ssk=1_sku=3.stl',F2,V2)
+% stlwrite('C:\Users\Tanzy\Desktop\t_sq=0.5_ssk=0_sku=4.stl',F5,V5)
